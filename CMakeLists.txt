@@ -20,6 +20,12 @@ FetchContent_Declare(
     GIT_TAG        v1.90.9
 )
 FetchContent_MakeAvailable(imgui)
+FetchContent_Declare(
+    imgui_file_dialog
+    GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
+    GIT_TAG        v0.6.6
+)
+FetchContent_MakeAvailable(imgui_file_dialog)
 find_package(SDL3 REQUIRED)
 
 set(IMGUI_SOURCES
@@ -30,12 +36,14 @@ set(IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
     ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+    ${imgui_file_dialog_SOURCE_DIR}/ImGuiFileDialog.cpp
 )
 add_library(imgui STATIC ${IMGUI_SOURCES})
 target_include_directories(imgui
     PUBLIC ${imgui_SOURCE_DIR}
     PUBLIC ${imgui_SOURCE_DIR}/backends
     PUBLIC ${imgui_SOURCE_DIR}/misc/cpp
+    PUBLIC ${imgui_file_dialog_SOURCE_DIR}
 )
 target_link_libraries(imgui PRIVATE SDL3::SDL3)
 

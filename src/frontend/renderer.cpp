@@ -1,5 +1,6 @@
 #include "frontend/renderer.hpp"
 #include <SDL3/SDL.h>
+#include <ImGuiFileDialog.h>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -128,9 +129,9 @@ void Renderer::present() {
 }
 
 void Renderer::clear() {
-  constexpr std::uint32_t white = 0xFFFFFFFF;
+  constexpr std::uint32_t black = 0xFF000000;
   for (int i = 0; i < framebuf_width * framebuf_height; ++i)
-    pixels[i] = white;
+    pixels[i] = black;
 }
 
 bool Renderer::consume_load_request(std::string &rom_path) {
@@ -165,6 +166,11 @@ void Renderer::build_ui() {
   if (ui_state.show_load_window) {
     ImGui::Begin("Load ROM", &ui_state.show_load_window);
     ImGui::InputText("ROM Path", &ui_state.rom_path);
+    ImGui::SameLine();
+    if (ImGui::Button("Browse...")) {
+      ImGuiFileDialog::Instance()->OpenDialog("RomFileDialog", "Choose ROM",
+                                              ".gb,.gbc", ".");
+    }
     if (ImGui::Button("Load ROM")) {
       if (ui_state.rom_path.empty()) {
         ui_state.status_message = "Please enter a ROM path.";
@@ -178,6 +184,15 @@ void Renderer::build_ui() {
       ImGui::TextUnformatted(ui_state.status_message.c_str());
     }
     ImGui::End();
+  }
+
+  if (ImGuiFileDialog::Instance()->Display("RomFileDialog")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      ui_state.rom_path = ImGuiFileDialog::Instance()->GetFilePathName();
+      ui_state.request_load = true;
+      ui_state.status_message = "Loading ROM...";
+    }
+    ImGuiFileDialog::Instance()->Close();
   }
 
   if (ui_state.show_settings_window) {
