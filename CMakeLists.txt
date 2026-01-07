@@ -14,7 +14,30 @@ FetchContent_Declare(
     GIT_TAG        v2.12.0
 )
 FetchContent_MakeAvailable(pybind11)
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.90.9
+)
+FetchContent_MakeAvailable(imgui)
 find_package(SDL3 REQUIRED)
+
+set(IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+)
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui
+    PUBLIC ${imgui_SOURCE_DIR}
+    PUBLIC ${imgui_SOURCE_DIR}/backends
+    PUBLIC ${imgui_SOURCE_DIR}/misc/cpp
+)
+target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
 # Common sources
 set(GBC_CORE_SOURCES
@@ -71,6 +94,7 @@ add_executable(gbc
 )
 target_link_libraries(gbc
     PRIVATE SDL3::SDL3
+    PRIVATE imgui
 )
 target_include_directories(gbc
     PRIVATE ${GBC_INCLUDE_DIR}
@@ -86,6 +110,7 @@ pybind11_add_module(gbc_py
 )
 target_link_libraries(gbc_py
     PRIVATE SDL3::SDL3
+    PRIVATE imgui
 )
 target_include_directories(gbc_py
     PRIVATE ${GBC_INCLUDE_DIR}
