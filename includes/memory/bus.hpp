@@ -6,6 +6,7 @@
 #include "memory/dma.hpp"
 #include "memory/mmio/cgb.hpp"
 #include "memory/mmio/dmg.hpp"
+#include "memory/mmio/joypad.hpp"
 #include "memory/mmio/mmio.hpp"
 
 #include <array>
@@ -65,6 +66,7 @@ private:
   /* System control registers: (speed mode, backwards compatability, etc) */
   SYS::KEY0 key0; // Controls DMG backwards compatability
   SYS::KEY1 key1; // Controls clock speed mode
+  Joypad joypad;
 
   /* Direct memory access routine modules */
   ObjAttrDMA oam_dma;

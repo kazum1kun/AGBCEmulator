@@ -70,6 +70,7 @@ set(GBC_CORE_SOURCES
     src/memory/bus.cpp
     src/memory/mmio/dmg.cpp
     src/memory/mmio/cgb.cpp
+    src/memory/mmio/joypad.cpp
     src/memory/mmio/mmio.cpp
     src/memory/dma.cpp
 

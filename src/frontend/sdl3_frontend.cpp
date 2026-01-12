@@ -1,6 +1,7 @@
 #include "frontend/sdl3_frontend.hpp"
 #include "SDL3/SDL_video.h"
 #include "cart/cart.hpp"
+#include "memory/mmio/joypad.hpp"
 #include "ppu/palette.hpp"
 #include <SDL3/SDL.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -96,6 +97,13 @@ void SDL3Frontend::poll_events() {
     ImGui_ImplSDL3_ProcessEvent(&e);
     if (e.type == SDL_EVENT_QUIT)
       running = false;
+    if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
+      ImGuiIO &io = ImGui::GetIO();
+      if (io.WantCaptureKeyboard)
+        continue;
+      const bool pressed = (e.type == SDL_EVENT_KEY_DOWN);
+      update_button_state(e.key.key, pressed);
+    }
   }
 }
 
@@ -242,10 +250,15 @@ void SDL3Frontend::emulation_thread_fn(std::stop_token st, cart c) {
   /* Re-instantiate emulator instance */
   gbc_ = std::make_unique<GameBoyColor>(*this);
   gbc_->insert_cartridge(c);
+  auto *joypad = dynamic_cast<Joypad *>(
+      gbc_->get_bus()->get_mmio(IORegisterMapping::MMIO_JOYPAD));
+  if (!joypad)
+    throw std::logic_error("Failed to configure joypad input");
 
   /* Run emulation in real-time */
   while (!st.stop_requested()) [[likely]] {
     const auto beg = steady_clk::now();
+    joypad->set_state(input_state.buttons.load(std::memory_order_relaxed));
     for (unsigned i = 0; i < sync_cycles; i++)
       gbc_->step();
 
@@ -258,6 +271,48 @@ void SDL3Frontend::emulation_thread_fn(std::stop_token st, cart c) {
     emu_state.is_cgb.store(gbc_->is_cgb_mode());
     ff = emu_state.fast_forward.load();
   }
+}
+
+void SDL3Frontend::update_button_state(SDL_Keycode key, bool pressed) {
+  byte_t mask = 0;
+  switch (key) {
+  case SDLK_RIGHT:
+    mask = static_cast<byte_t>(JoypadButton::RIGHT);
+    break;
+  case SDLK_LEFT:
+    mask = static_cast<byte_t>(JoypadButton::LEFT);
+    break;
+  case SDLK_UP:
+    mask = static_cast<byte_t>(JoypadButton::UP);
+    break;
+  case SDLK_DOWN:
+    mask = static_cast<byte_t>(JoypadButton::DOWN);
+    break;
+  case SDLK_z:
+    mask = static_cast<byte_t>(JoypadButton::A);
+    break;
+  case SDLK_x:
+    mask = static_cast<byte_t>(JoypadButton::B);
+    break;
+  case SDLK_RSHIFT:
+    mask = static_cast<byte_t>(JoypadButton::SELECT);
+    break;
+  case SDLK_RETURN:
+    mask = static_cast<byte_t>(JoypadButton::START);
+    break;
+  default:
+    break;
+  }
+
+  if (mask == 0)
+    return;
+
+  byte_t current = input_state.buttons.load(std::memory_order_relaxed);
+  if (pressed)
+    current |= mask;
+  else
+    current &= static_cast<byte_t>(~mask);
+  input_state.buttons.store(current, std::memory_order_relaxed);
 }
 
 
